@@ -705,6 +705,7 @@ int ndctl_dimm_disable_passphrase(struct ndctl_dimm *dimm, long key);
 int ndctl_dimm_freeze_security(struct ndctl_dimm *dimm);
 int ndctl_dimm_secure_erase(struct ndctl_dimm *dimm, long key);
 int ndctl_dimm_overwrite(struct ndctl_dimm *dimm, long key);
+int ndctl_dimm_wait_overwrite(struct ndctl_dimm *dimm);
 
 enum ndctl_key_type {
 	ND_USER_KEY,

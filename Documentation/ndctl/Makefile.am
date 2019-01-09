@@ -52,7 +52,8 @@ man1_MANS = \
 	ndctl-update-passphrase.1 \
 	ndctl-disable-passphrase.1 \
 	ndctl-freeze-security.1 \
-	ndctl-sanitize-dimm.1
+	ndctl-sanitize-dimm.1 \
+	ndctl-wait-overwrite.1
 
 CLEANFILES = $(man1_MANS)
 

@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: GPL-2.0
+
+ndctl-wait-overwrite(1)
+=======================
+
+NAME
+----
+ndctl-wait-overwrite - wait for nvdimm overwrite operation to complete
+
+SYNOPSIS
+--------
+[verse]
+'ndctl wait-overwrite' <dimm> [<options>]
+
+DESCRIPTION
+-----------
+The kernel provides a POLL(2) capable sysfs file ('security') to indicate
+the state of overwrite. The 'ndctl wait-overwrite' operation waits for
+a change in the state of the 'security' file across all specified dimms.
+
+OPTIONS
+-------
+-v::
+--verbose::
+	Emit debug messages for the overwrite wait process
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkndctl:ndctl-sanitize-dimm[1]
