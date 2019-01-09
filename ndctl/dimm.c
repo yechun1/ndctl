@@ -47,6 +47,7 @@ static struct parameters {
 	const char *labelversion;
 	const char *key_path;
 	const char *master_key;
+	bool crypto_erase;
 	bool force;
 	bool json;
 	bool verbose;
@@ -894,6 +895,35 @@ static int action_security_freeze(struct ndctl_dimm *dimm,
 	return rc;
 }
 
+static int action_sanitize_dimm(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	int rc;
+
+	if (!ndctl_dimm_security_supported(dimm)) {
+		error("%s: security operation not supported\n",
+				ndctl_dimm_get_devname(dimm));
+		return -EOPNOTSUPP;
+	}
+
+	/*
+	 * Setting crypto erase to be default. The other method will be
+	 * overwrite.
+	 */
+	if (!param.crypto_erase) {
+		param.crypto_erase = true;
+		printf("No santize method passed in, default to crypto-erase\n");
+	}
+
+	if (param.crypto_erase) {
+		rc = ndctl_dimm_secure_erase_key(dimm, param.key_path);
+		if (rc < 0)
+			return rc;
+	}
+
+	return 0;
+}
+
 static int __action_init(struct ndctl_dimm *dimm,
 		enum ndctl_namespace_version version, int chk_only)
 {
@@ -991,6 +1021,10 @@ OPT_FILENAME('p', "key-path", &param.key_path, "key-path", \
 OPT_STRING('m', "master-key", &param.master_key, "<key_type>:<key_name>", \
 		"master key for security")
 
+#define SANITIZE_OPTIONS() \
+OPT_BOOLEAN('c', "crypto-erase", &param.crypto_erase, \
+		"crypto erase a dimm")
+
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
 	READ_OPTIONS(),
@@ -1030,6 +1064,13 @@ static const struct option key_options[] = {
 	BASE_OPTIONS(),
 	KEY_BASE_OPTIONS(),
 	KEY_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option sanitize_options[] = {
+	BASE_OPTIONS(),
+	KEY_BASE_OPTIONS(),
+	SANITIZE_OPTIONS(),
 	OPT_END(),
 };
 
@@ -1310,6 +1351,17 @@ int cmd_freeze_security(int argc, const char **argv, void *ctx)
 			"ndctl freeze-security <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
 	fprintf(stderr, "security freezed %d nmem%s.\n", count >= 0 ? count : 0,
+			count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_sanitize_dimm(int argc, const char **argv, void *ctx)
+{
+	int count = dimm_action(argc, argv, ctx, action_sanitize_dimm,
+			sanitize_options,
+			"ndctl sanitize-dimm <nmem0> [<nmem1>..<nmemN>] [<options>]");
+
+	fprintf(stderr, "sanitized %d nmem%s.\n", count >= 0 ? count : 0,
 			count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }

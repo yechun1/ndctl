@@ -1,0 +1,37 @@
+// SPDX-License-Identifier: GPL-2.0
+
+ndctl-sanitize-dimm(1)
+======================
+
+NAME
+----
+ndctl-sanitize-dimm - sanitize the data on the NVDIMM
+
+SYNOPSIS
+--------
+[verse]
+'ndctl sanitize' <dimm> [<options>]
+
+DESCRIPTION
+-----------
+Provide a generic interface to crypto erase a NVDIMM.
+Ndctl will search the user key ring for the associated DIMM. If no key is
+found, it will attempt to load the key blob from the expected location. Ndctl
+will remove the key and the key blob once security is disabled.
+
+OPTIONS
+-------
+<dimm>::
+include::xable-dimm-options.txt[]
+
+-p::
+--key-path=::
+	Path to where key related files resides. This parameter is optional
+	and the default is set to /etc/ndctl/keys.
+
+-c::
+--crypto-erase::
+	Replaces encryption keys and securely erases the data. This does not
+	change label data. This is the default sanitize method.
+
+include::../copyright.txt[]

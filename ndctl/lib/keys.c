@@ -393,7 +393,8 @@ NDCTL_EXPORT int ndctl_dimm_update_key(struct ndctl_dimm *dimm,
 	return 0;
 }
 
-NDCTL_EXPORT int ndctl_dimm_disable_key(struct ndctl_dimm *dimm,
+static int check_key_run_and_discard(struct ndctl_dimm *dimm,
+		int (*run_op)(struct ndctl_dimm *, long), const char *name,
 		const char *keypath)
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
@@ -409,9 +410,9 @@ NDCTL_EXPORT int ndctl_dimm_disable_key(struct ndctl_dimm *dimm,
 		}
 	}
 
-	rc = ndctl_dimm_disable_passphrase(dimm, key);
+	rc = run_op(dimm, key);
 	if (rc < 0) {
-		err(ctx, "Failed to disable security for %s\n",
+		err(ctx, "Failed %s for %s\n", name,
 				ndctl_dimm_get_devname(dimm));
 		return rc;
 	}
@@ -420,4 +421,18 @@ NDCTL_EXPORT int ndctl_dimm_disable_key(struct ndctl_dimm *dimm,
 	if (rc < 0)
 		err(ctx, "Unable to cleanup key.\n");
 	return 0;
+}
+
+NDCTL_EXPORT int ndctl_dimm_disable_key(struct ndctl_dimm *dimm,
+		const char *keypath)
+{
+	return check_key_run_and_discard(dimm, ndctl_dimm_disable_passphrase,
+			"disable passphrase", keypath);
+}
+
+NDCTL_EXPORT int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm,
+		const char *keypath)
+{
+	return check_key_run_and_discard(dimm, ndctl_dimm_secure_erase,
+			"crypto erase", keypath);
 }
