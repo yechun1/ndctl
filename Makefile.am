@@ -42,6 +42,16 @@ bashcompletiondir = $(BASH_COMPLETION_DIR)
 dist_bashcompletion_DATA = contrib/ndctl
 endif
 
+load_key_file = contrib/ndctl-loadkeys.sh
+load_keydir = $(sysconfdir)/ndctl/
+load_key_DATA = $(load_key_file)
+EXTRA_DIST += $(load_key_file)
+
+modprobe_file = contrib/nvdimm_modprobe.conf
+modprobedir = $(sysconfdir)/modprobe.d/
+modprobe_DATA = $(modprobe_file)
+EXTRA_DIST += $(modprobe_file)
+
 noinst_LIBRARIES = libccan.a
 libccan_a_SOURCES = \
 	ccan/str/str.h \
