@@ -21,7 +21,7 @@
 #define KEY_CMD_SIZE	128
 
 static int get_key_path(struct ndctl_dimm *dimm, char *path,
-		enum ndctl_key_type key_type, const char *keypath)
+		const char *keypath, enum ndctl_key_type key_type)
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	char hostname[HOST_NAME_MAX];
@@ -33,16 +33,29 @@ static int get_key_path(struct ndctl_dimm *dimm, char *path,
 		return -errno;
 	}
 
-	if (key_type == ND_USER_OLD_KEY) {
-		rc = sprintf(path, "%s/nvdimmold_%s_%s.blob",
-				keypath,
-				ndctl_dimm_get_unique_id(dimm),
+	switch (key_type) {
+	case ND_USER_OLD_KEY:
+		rc = sprintf(path, "%s/nvdimm-old_%s_%s.blob",
+				keypath, ndctl_dimm_get_unique_id(dimm),
 				hostname);
-	} else {
+		break;
+	case ND_USER_KEY:
 		rc = sprintf(path, "%s/nvdimm_%s_%s.blob",
-				keypath,
-				ndctl_dimm_get_unique_id(dimm),
+				keypath, ndctl_dimm_get_unique_id(dimm),
 				hostname);
+		break;
+	case ND_MASTER_OLD_KEY:
+		rc = sprintf(path, "%s/nvdimm-master-old_%s_%s.blob",
+				keypath, ndctl_dimm_get_unique_id(dimm),
+				hostname);
+		break;
+	case ND_MASTER_KEY:
+		rc = sprintf(path, "%s/nvdimm-master_%s_%s.blob",
+				keypath, ndctl_dimm_get_unique_id(dimm),
+				hostname);
+		break;
+	default:
+		return -EINVAL;
 	}
 
 	if (rc < 0) {
@@ -59,12 +72,26 @@ static int get_key_desc(struct ndctl_dimm *dimm, char *desc,
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	int rc;
 
-	if (key_type == ND_USER_OLD_KEY)
+	switch (key_type) {
+	case ND_USER_OLD_KEY:
 		rc = sprintf(desc, "nvdimm-old:%s",
 				ndctl_dimm_get_unique_id(dimm));
-	else
+		break;
+	case ND_USER_KEY:
 		rc = sprintf(desc, "nvdimm:%s",
 				ndctl_dimm_get_unique_id(dimm));
+		break;
+	case ND_MASTER_OLD_KEY:
+		rc = sprintf(desc, "nvdimm-master-old:%s",
+				ndctl_dimm_get_unique_id(dimm));
+		break;
+	case ND_MASTER_KEY:
+		rc = sprintf(desc, "nvdimm-master:%s",
+				ndctl_dimm_get_unique_id(dimm));
+		break;
+	default:
+		return -EINVAL;
+	}
 
 	if (rc < 0) {
 		err(ctx, "error setting key description: %s\n",
@@ -141,7 +168,8 @@ static key_serial_t dimm_check_key(struct ndctl_dimm *dimm,
 }
 
 static key_serial_t dimm_create_key(struct ndctl_dimm *dimm,
-		const char *master, const char *keypath)
+		const char *master_key, const char *keypath,
+		enum ndctl_key_type key_type)
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	char desc[DESC_SIZE];
@@ -161,7 +189,7 @@ static key_serial_t dimm_create_key(struct ndctl_dimm *dimm,
 		return -EBUSY;
 	}
 
-	rc = get_key_desc(dimm, desc, ND_USER_KEY);
+	rc = get_key_desc(dimm, desc, key_type);
 	if (rc < 0)
 		return rc;
 
@@ -172,7 +200,7 @@ static key_serial_t dimm_create_key(struct ndctl_dimm *dimm,
 		return -EEXIST;
 	}
 
-	rc = get_key_path(dimm, path, ND_USER_KEY, keypath);
+	rc = get_key_path(dimm, path, keypath, key_type);
 	if (rc < 0)
 		return rc;
 
@@ -182,7 +210,7 @@ static key_serial_t dimm_create_key(struct ndctl_dimm *dimm,
 		return -EEXIST;
 	}
 
-	rc = sprintf(cmd, "new enc32 %s 32", master);
+	rc = sprintf(cmd, "new enc32 %s 32", master_key);
 	if (rc < 0) {
 		err(ctx, "sprintf: %s\n", strerror(errno));
 		return -errno;
@@ -229,7 +257,7 @@ static key_serial_t dimm_create_key(struct ndctl_dimm *dimm,
 }
 
 static key_serial_t dimm_load_key(struct ndctl_dimm *dimm,
-		enum ndctl_key_type key_type, const char *keypath)
+		const char *keypath, enum ndctl_key_type key_type)
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	key_serial_t key;
@@ -249,7 +277,7 @@ static key_serial_t dimm_load_key(struct ndctl_dimm *dimm,
 	if (rc < 0)
 		return rc;
 
-	rc = get_key_path(dimm, path, key_type, keypath);
+	rc = get_key_path(dimm, path, keypath, key_type);
 	if (rc < 0)
 		return rc;
 
@@ -274,13 +302,14 @@ static key_serial_t dimm_load_key(struct ndctl_dimm *dimm,
  * ring.
  */
 static key_serial_t move_key_to_old(struct ndctl_dimm *dimm,
-		const char *keypath)
+		const char *keypath, enum ndctl_key_type key_type)
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	int rc;
 	key_serial_t key;
 	char old_path[PATH_SIZE];
 	char new_path[PATH_SIZE];
+	enum ndctl_key_type okey_type;
 
 	if (ndctl_dimm_is_active(dimm)) {
 		err(ctx, "regions active on %s, op failed\n",
@@ -288,15 +317,22 @@ static key_serial_t move_key_to_old(struct ndctl_dimm *dimm,
 		return -EBUSY;
 	}
 
-	key = dimm_check_key(dimm, ND_USER_KEY);
+	key = dimm_check_key(dimm, key_type);
 	if (key > 0)
 		keyctl_unlink(key, KEY_SPEC_USER_KEYRING);
 
-	rc = get_key_path(dimm, old_path, ND_USER_KEY, keypath);
+	if (key_type == ND_USER_KEY)
+		okey_type = ND_USER_OLD_KEY;
+	else if (key_type == ND_MASTER_KEY)
+		okey_type = ND_MASTER_OLD_KEY;
+	else
+		return -EINVAL;
+
+	rc = get_key_path(dimm, old_path, keypath, key_type);
 	if (rc < 0)
 		return rc;
 
-	rc = get_key_path(dimm, new_path, ND_USER_OLD_KEY, keypath);
+	rc = get_key_path(dimm, new_path, keypath, okey_type);
 	if (rc < 0)
 		return rc;
 
@@ -307,11 +343,11 @@ static key_serial_t move_key_to_old(struct ndctl_dimm *dimm,
 		return -errno;
 	}
 
-	return dimm_load_key(dimm, ND_USER_OLD_KEY, keypath);
+	return dimm_load_key(dimm, keypath, okey_type);
 }
 
-static int dimm_remove_key(struct ndctl_dimm *dimm,
-		enum ndctl_key_type key_type, const char *keypath)
+static int dimm_remove_key(struct ndctl_dimm *dimm, const char *keypath,
+		enum ndctl_key_type key_type)
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	key_serial_t key;
@@ -322,7 +358,7 @@ static int dimm_remove_key(struct ndctl_dimm *dimm,
 	if (key > 0)
 		keyctl_unlink(key, KEY_SPEC_USER_KEYRING);
 
-	rc = get_key_path(dimm, path, key_type, keypath);
+	rc = get_key_path(dimm, path, keypath, key_type);
 	if (rc < 0)
 		return rc;
 
@@ -337,18 +373,22 @@ static int dimm_remove_key(struct ndctl_dimm *dimm,
 }
 
 NDCTL_EXPORT int ndctl_dimm_enable_key(struct ndctl_dimm *dimm,
-		const char *master, const char *keypath)
+		const char *master_key, const char *keypath,
+		enum ndctl_key_type key_type)
 {
 	key_serial_t key;
 	int rc;
 
-	key = dimm_create_key(dimm, master, keypath);
+	key = dimm_create_key(dimm, master_key, keypath, key_type);
 	if (key < 0)
 		return key;
 
-	rc = ndctl_dimm_update_passphrase(dimm, 0, key);
+	if (key_type == ND_MASTER_KEY)
+		rc = ndctl_dimm_update_master_passphrase(dimm, 0, key);
+	else
+		rc = ndctl_dimm_update_passphrase(dimm, 0, key);
 	if (rc < 0) {
-		dimm_remove_key(dimm, ND_USER_KEY, keypath);
+		dimm_remove_key(dimm, keypath, key_type);
 		return rc;
 	}
 
@@ -356,10 +396,19 @@ NDCTL_EXPORT int ndctl_dimm_enable_key(struct ndctl_dimm *dimm,
 }
 
 NDCTL_EXPORT int ndctl_dimm_update_key(struct ndctl_dimm *dimm,
-		const char *master, const char *keypath)
+		const char *master_key, const char *keypath,
+		enum ndctl_key_type key_type)
 {
 	int rc;
 	key_serial_t old_key, new_key;
+	enum ndctl_key_type okey_type;
+
+	if (key_type == ND_USER_KEY)
+		okey_type = ND_USER_OLD_KEY;
+	else if (key_type == ND_MASTER_KEY)
+		okey_type = ND_MASTER_OLD_KEY;
+	else
+		return -EINVAL;
 
 	/*
 	 * 1. check if current key is loaded and remove
@@ -369,23 +418,27 @@ NDCTL_EXPORT int ndctl_dimm_update_key(struct ndctl_dimm *dimm,
 	 * 5. remove old key
 	 * 6. remove old key blob
 	 */
-	old_key = move_key_to_old(dimm, keypath);
+	old_key = move_key_to_old(dimm, keypath, key_type);
 	if (old_key < 0)
 		return old_key;
 
-	new_key = dimm_create_key(dimm, master, keypath);
+	new_key = dimm_create_key(dimm, master_key, keypath, key_type);
 	/* need to create new key here */
 	if (new_key < 0) {
-		new_key = dimm_load_key(dimm, ND_USER_KEY, keypath);
+		new_key = dimm_load_key(dimm, keypath, key_type);
 		if (new_key < 0)
 			return new_key;
 	}
 
-	rc = ndctl_dimm_update_passphrase(dimm, old_key, new_key);
+	if (key_type == ND_MASTER_KEY)
+		rc = ndctl_dimm_update_master_passphrase(dimm,
+				old_key, new_key);
+	else
+		rc = ndctl_dimm_update_passphrase(dimm, old_key, new_key);
 	if (rc < 0)
 		return rc;
 
-	rc = dimm_remove_key(dimm, ND_USER_OLD_KEY, keypath);
+	rc = dimm_remove_key(dimm, keypath, okey_type);
 	if (rc < 0)
 		return rc;
 
@@ -400,9 +453,9 @@ static int check_key_run_and_discard(struct ndctl_dimm *dimm,
 	key_serial_t key;
 	int rc;
 
-	key = dimm_check_key(dimm, false);
+	key = dimm_check_key(dimm, ND_USER_KEY);
 	if (key < 0) {
-		key = dimm_load_key(dimm, false, keypath);
+		key = dimm_load_key(dimm, keypath, ND_USER_KEY);
 		if (key < 0 && run_op != ndctl_dimm_overwrite) {
 			err(ctx, "Unable to load key\n");
 			return -ENOKEY;
@@ -418,7 +471,7 @@ static int check_key_run_and_discard(struct ndctl_dimm *dimm,
 	}
 
 	if (key) {
-		rc = dimm_remove_key(dimm, false, keypath);
+		rc = dimm_remove_key(dimm, keypath, ND_USER_KEY);
 		if (rc < 0)
 			err(ctx, "Unable to cleanup key.\n");
 	}

@@ -49,6 +49,7 @@ static struct parameters {
 	const char *master_key;
 	bool crypto_erase;
 	bool overwrite;
+	bool master_pass;
 	bool force;
 	bool json;
 	bool verbose;
@@ -849,8 +850,8 @@ static int action_key_enable(struct ndctl_dimm *dimm,
 		return -EOPNOTSUPP;
 	}
 
-	return ndctl_dimm_enable_key(dimm, param.master_key,
-			param.key_path);
+	return ndctl_dimm_enable_key(dimm, param.master_key, param.key_path,
+			param.master_pass ? ND_MASTER_KEY : ND_USER_KEY);
 }
 
 static int action_key_update(struct ndctl_dimm *dimm,
@@ -862,8 +863,8 @@ static int action_key_update(struct ndctl_dimm *dimm,
 		return -EOPNOTSUPP;
 	}
 
-	return ndctl_dimm_update_key(dimm, param.master_key,
-			param.key_path);
+	return ndctl_dimm_update_key(dimm, param.master_key, param.key_path,
+			param.master_pass ? ND_MASTER_KEY : ND_USER_KEY);
 }
 
 static int action_passphrase_disable(struct ndctl_dimm *dimm,
@@ -1044,7 +1045,9 @@ OPT_FILENAME('p', "key-path", &param.key_path, "key-path", \
 
 #define KEY_OPTIONS() \
 OPT_STRING('m', "master-key", &param.master_key, "<key_type>:<key_name>", \
-		"master key for security")
+		"master key for security"), \
+OPT_BOOLEAN('M', "master-passphrase", &param.master_pass, \
+		"use master passphrase")
 
 #define SANITIZE_OPTIONS() \
 OPT_BOOLEAN('c', "crypto-erase", &param.crypto_erase, \

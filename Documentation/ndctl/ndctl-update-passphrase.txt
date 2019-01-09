@@ -26,7 +26,7 @@ OPTIONS
 include::xable-dimm-options.txt[]
 
 -m::
---master::
+--master-key=::
 	New key name for the master key to seal the new nvdimm key, or the
 	existing master key name. i.e trusted:master-key.
 
@@ -34,5 +34,10 @@ include::xable-dimm-options.txt[]
 --key-path=::
 	Path to where key related files resides. This parameter is optional
 	and the default is set to /etc/ndctl/keys.
+
+-M::
+--master-passphrase::
+	Parameter to indicate that we are managing the master passphrase
+	instead of the user passphrase.
 
 include::../copyright.txt[]

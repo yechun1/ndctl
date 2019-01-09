@@ -29,7 +29,7 @@ OPTIONS
 include::xable-dimm-options.txt[]
 
 -m::
---master=::
+--master-key=::
 	Key name for the master key used to seal the NVDIMM security keys.
 	The format would be <key_type>:<master_key_name>
 	i.e.: trusted:master-nvdimm
@@ -38,5 +38,10 @@ include::xable-dimm-options.txt[]
 --key-path=::
 	Path to where key related files resides. This parameter is optional
 	and the default is set to /etc/ndctl/keys.
+
+-M::
+--master-passphrase::
+	Indicates that we are managing the master passphrase instead of the
+	user passphrase.
 
 include::../copyright.txt[]
