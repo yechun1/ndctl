@@ -447,13 +447,13 @@ NDCTL_EXPORT int ndctl_dimm_update_key(struct ndctl_dimm *dimm,
 
 static int check_key_run_and_discard(struct ndctl_dimm *dimm,
 		int (*run_op)(struct ndctl_dimm *, long), const char *name,
-		const char *keypath)
+		const char *keypath, enum ndctl_key_type key_type)
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	key_serial_t key;
 	int rc;
 
-	key = dimm_check_key(dimm, ND_USER_KEY);
+	key = dimm_check_key(dimm, key_type);
 	if (key < 0) {
 		key = dimm_load_key(dimm, keypath, ND_USER_KEY);
 		if (key < 0 && run_op != ndctl_dimm_overwrite) {
@@ -470,8 +470,12 @@ static int check_key_run_and_discard(struct ndctl_dimm *dimm,
 		return rc;
 	}
 
+	/* we do not delete the key if master secure erase */
+	if (key_type == ND_MASTER_KEY)
+		return 0;
+
 	if (key) {
-		rc = dimm_remove_key(dimm, keypath, ND_USER_KEY);
+		rc = dimm_remove_key(dimm, keypath, key_type);
 		if (rc < 0)
 			err(ctx, "Unable to cleanup key.\n");
 	}
@@ -482,19 +486,27 @@ NDCTL_EXPORT int ndctl_dimm_disable_key(struct ndctl_dimm *dimm,
 		const char *keypath)
 {
 	return check_key_run_and_discard(dimm, ndctl_dimm_disable_passphrase,
-			"disable passphrase", keypath);
+			"disable passphrase", keypath, ND_USER_KEY);
 }
 
 NDCTL_EXPORT int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm,
-		const char *keypath)
+		const char *keypath, enum ndctl_key_type key_type)
 {
-	return check_key_run_and_discard(dimm, ndctl_dimm_secure_erase,
-			"crypto erase", keypath);
+	if (key_type == ND_MASTER_KEY)
+		return check_key_run_and_discard(dimm,
+				ndctl_dimm_master_secure_erase,
+				"master crypto erase", keypath, key_type);
+	else if (key_type == ND_USER_KEY)
+		return check_key_run_and_discard(dimm,
+				ndctl_dimm_secure_erase,
+				"crypto erase", keypath, key_type);
+	else
+		return -EINVAL;
 }
 
 NDCTL_EXPORT int ndctl_dimm_overwrite_key(struct ndctl_dimm *dimm,
 		const char *keypath)
 {
 	return check_key_run_and_discard(dimm, ndctl_dimm_overwrite,
-			"overwrite", keypath);
+			"overwrite", keypath, ND_USER_KEY);
 }
