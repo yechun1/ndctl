@@ -32,4 +32,6 @@ int cmd_bat(int argc, const char **argv, struct ndctl_ctx *ctx);
 #endif
 int cmd_update_firmware(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_inject_smart(int argc, const char **argv, struct ndctl_ctx *ctx);
+int cmd_passphrase_setup(int argc, const char **argv, struct ndctl_ctx *ctx);
+int cmd_passphrase_update(int argc, const char **argv, struct ndctl_ctx *ctx);
 #endif /* _NDCTL_BUILTIN_H_ */

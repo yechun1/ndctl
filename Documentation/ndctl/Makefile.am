@@ -47,7 +47,9 @@ man1_MANS = \
 	ndctl-inject-smart.1 \
 	ndctl-update-firmware.1 \
 	ndctl-list.1 \
-	ndctl-monitor.1
+	ndctl-monitor.1 \
+	ndctl-enable-passphrase.1 \
+	ndctl-update-passphrase.1
 
 CLEANFILES = $(man1_MANS)
 

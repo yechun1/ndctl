@@ -30,7 +30,8 @@ ndctl_LDADD =\
 	../libutil.a \
 	$(UUID_LIBS) \
 	$(KMOD_LIBS) \
-	$(JSON_LIBS)
+	$(JSON_LIBS) \
+	-lkeyutils
 
 if ENABLE_TEST
 ndctl_SOURCES += ../test/libndctl.c \

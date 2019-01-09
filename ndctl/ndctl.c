@@ -88,6 +88,8 @@ static struct cmd_struct commands[] = {
 	{ "inject-smart", { cmd_inject_smart } },
 	{ "wait-scrub", { cmd_wait_scrub } },
 	{ "start-scrub", { cmd_start_scrub } },
+	{ "enable-passphrase", { cmd_passphrase_setup } },
+	{ "update-passphrase", { cmd_passphrase_update } },
 	{ "list", { cmd_list } },
 	{ "monitor", { cmd_monitor } },
 	{ "help", { cmd_help } },

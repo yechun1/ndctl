@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
+#include <keyutils.h>
 
 #ifdef HAVE_UUID
 #include <uuid/uuid.h>
@@ -681,6 +682,10 @@ enum ND_FW_STATUS ndctl_cmd_fw_xlat_firmware_status(struct ndctl_cmd *cmd);
 struct ndctl_cmd *ndctl_dimm_cmd_new_ack_shutdown_count(struct ndctl_dimm *dimm);
 int ndctl_dimm_fw_update_supported(struct ndctl_dimm *dimm);
 
+#define ND_PASSPHRASE_SIZE	32
+#define ND_KEY_DESC_LEN	22
+#define ND_KEY_DESC_PREFIX  7
+
 enum nd_security_state {
 	ND_SECURITY_INVALID = -1,
 	ND_SECURITY_UNSUPPORTED = 0,
@@ -693,6 +698,33 @@ enum nd_security_state {
 
 int ndctl_dimm_get_security(struct ndctl_dimm *dimm,
 		enum nd_security_state *sstate);
+bool ndctl_dimm_security_supported(struct ndctl_dimm *dimm);
+int ndctl_dimm_update_passphrase(struct ndctl_dimm *dimm,
+		long ckey, long nkey);
+
+enum ndctl_key_type {
+	ND_USER_KEY,
+	ND_USER_OLD_KEY,
+};
+
+#ifdef ENABLE_KEYUTILS
+int ndctl_dimm_enable_key(struct ndctl_dimm *dimm, const char *master,
+		const char *keypath);
+int ndctl_dimm_update_key(struct ndctl_dimm *dimm, const char *master,
+		const char *keypath);
+#else
+static inline int ndctl_dimm_enable_key(struct ndctl_dimm *dimm,
+		const char *master, const char *keypath)
+{
+	return -EOPNOTSUPP;
+}
+
+static inline int ndctl_dimm_update_key(struct ndctl_dimm *dimm,
+		const char *master, const char *keypath)
+{
+	return -EOPNOTSUPP;
+}
+#endif
 
 #ifdef __cplusplus
 } /* extern "C" */

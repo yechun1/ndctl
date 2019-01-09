@@ -40,6 +40,20 @@ struct action_context {
 	struct update_context update;
 };
 
+static struct parameters {
+	const char *bus;
+	const char *outfile;
+	const char *infile;
+	const char *labelversion;
+	const char *key_path;
+	const char *master_key;
+	bool force;
+	bool json;
+	bool verbose;
+} param = {
+	.labelversion = "1.1",
+};
+
 static int action_disable(struct ndctl_dimm *dimm, struct action_context *actx)
 {
 	if (ndctl_dimm_is_active(dimm)) {
@@ -824,17 +838,31 @@ static int action_update(struct ndctl_dimm *dimm, struct action_context *actx)
 	return rc;
 }
 
-static struct parameters {
-	const char *bus;
-	const char *outfile;
-	const char *infile;
-	const char *labelversion;
-	bool force;
-	bool json;
-	bool verbose;
-} param = {
-	.labelversion = "1.1",
-};
+static int action_key_enable(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	if (!ndctl_dimm_security_supported(dimm)) {
+		error("%s: security operation not supported\n",
+				ndctl_dimm_get_devname(dimm));
+		return -EOPNOTSUPP;
+	}
+
+	return ndctl_dimm_enable_key(dimm, param.master_key,
+			param.key_path);
+}
+
+static int action_key_update(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	if (!ndctl_dimm_security_supported(dimm)) {
+		error("%s: security operation not supported\n",
+				ndctl_dimm_get_devname(dimm));
+		return -EOPNOTSUPP;
+	}
+
+	return ndctl_dimm_update_key(dimm, param.master_key,
+			param.key_path);
+}
 
 static int __action_init(struct ndctl_dimm *dimm,
 		enum ndctl_namespace_version version, int chk_only)
@@ -925,6 +953,12 @@ OPT_BOOLEAN('f', "force", &param.force, \
 OPT_STRING('V', "label-version", &param.labelversion, "version-number", \
 	"namespace label specification version (default: 1.1)")
 
+#define KEY_OPTIONS() \
+OPT_STRING('m', "master-key", &param.master_key, "<key_type>:<key_name>", \
+		"master key for security"), \
+OPT_FILENAME('p', "key-path", &param.key_path, "key-path", \
+		"override the default key path")
+
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
 	READ_OPTIONS(),
@@ -951,6 +985,12 @@ static const struct option base_options[] = {
 static const struct option init_options[] = {
 	BASE_OPTIONS(),
 	INIT_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option key_options[] = {
+	BASE_OPTIONS(),
+	KEY_OPTIONS(),
 	OPT_END(),
 };
 
@@ -1024,6 +1064,13 @@ static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 		}
 	}
 
+	if (!param.master_key &&
+			(action == action_key_enable ||
+			 action == action_key_update)) {
+		usage_with_options(u, options);
+		return -EINVAL;
+	}
+
 	if (param.verbose)
 		ndctl_set_log_priority(ctx, LOG_DEBUG);
 
@@ -1041,6 +1088,9 @@ static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 		rc = -EINVAL;
 		goto out;
 	}
+
+	if (!param.key_path)
+		param.key_path = strdup(NDCTL_KEYS_DIR);
 
 	rc = 0;
 	err = 0;
@@ -1178,6 +1228,28 @@ int cmd_update_firmware(int argc, const char **argv, struct ndctl_ctx *ctx)
 			"ndctl update-firmware <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
 	fprintf(stderr, "updated %d nmem%s.\n", count >= 0 ? count : 0,
+			count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_passphrase_update(int argc, const char **argv, struct ndctl_ctx *ctx)
+{
+	int count = dimm_action(argc, argv, ctx, action_key_update,
+			key_options,
+			"ndctl update-passphrase <nmem0> [<nmem1>..<nmemN>] [<options>]");
+
+	fprintf(stderr, "passphrase updated for %d nmem%s.\n", count >= 0 ? count : 0,
+			count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_passphrase_setup(int argc, const char **argv, struct ndctl_ctx *ctx)
+{
+	int count = dimm_action(argc, argv, ctx, action_key_enable,
+			key_options,
+			"ndctl enable-passphrase <nmem0> [<nmem1>..<nmemN>] [<options>]");
+
+	fprintf(stderr, "passphrase enabled for %d nmem%s.\n", count >= 0 ? count : 0,
 			count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }

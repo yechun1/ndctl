@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: GPL-2.0
+
+ndctl-enable-passphrase(1)
+==========================
+
+NAME
+----
+ndctl-enable-passphrase - enable the security passphrase for a NVDIMM
+
+SYNOPSIS
+--------
+[verse]
+'ndctl enable-passphrase' <dimm> [<options>]
+
+DESCRIPTION
+-----------
+Provide a command to enable the security passphrase for the NVDIMM.
+It is expected that the master key has already been loaded into the user
+key ring. The encrypted key blobs will be created in /etc/nvdimm directory
+with the file name of "nvdimm-<hostname>-<dimm unique id>.blob".
+
+The command will fail if the nvdimm key is already in the user key ring and/or
+the key blob already resides in /etc/nvdimm. Do not touch the /etc/nvdimm
+directory and let ndctl manage the keys, unless you know what you are doing.
+
+OPTIONS
+-------
+<dimm>::
+include::xable-dimm-options.txt[]
+
+-m::
+--master=::
+	Key name for the master key used to seal the NVDIMM security keys.
+	The format would be <key_type>:<master_key_name>
+	i.e.: trusted:master-nvdimm
+
+-p::
+--key-path=::
+	Path to where key related files resides. This parameter is optional
+	and the default is set to /etc/ndctl/keys.
+
+include::../copyright.txt[]

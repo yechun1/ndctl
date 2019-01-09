@@ -24,11 +24,19 @@ libndctl_la_SOURCES =\
 	firmware.c \
 	libndctl.c
 
+if ENABLE_KEYUTILS
+libndctl_la_SOURCES += keys.c
+endif
+
 libndctl_la_LIBADD =\
 	../../daxctl/lib/libdaxctl.la \
 	$(UDEV_LIBS) \
 	$(UUID_LIBS) \
 	$(KMOD_LIBS)
+
+if ENABLE_KEYUTILS
+libndctl_la_LIBADD += -lkeyutils
+endif
 
 EXTRA_DIST += libndctl.sym
 

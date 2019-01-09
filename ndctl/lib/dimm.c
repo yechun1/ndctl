@@ -624,3 +624,42 @@ NDCTL_EXPORT int ndctl_dimm_get_security(struct ndctl_dimm *dimm,
 
 	return 0;
 }
+
+NDCTL_EXPORT bool ndctl_dimm_security_supported(struct ndctl_dimm *dimm)
+{
+	enum nd_security_state state;
+	int rc;
+
+	rc = ndctl_dimm_get_security(dimm, &state);
+	if (rc < 0)
+		return false;
+
+	if (state == ND_SECURITY_UNSUPPORTED)
+		return false;
+
+	return true;
+}
+
+static int write_security(struct ndctl_dimm *dimm, const char *cmd)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	char *path = dimm->dimm_buf;
+	int len = dimm->buf_len;
+
+	if (snprintf(path, len, "%s/security", dimm->dimm_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_dimm_get_devname(dimm));
+		return -ERANGE;
+	}
+
+	return sysfs_write_attr(ctx, path, cmd);
+}
+
+NDCTL_EXPORT int ndctl_dimm_update_passphrase(struct ndctl_dimm *dimm,
+		long ckey, long nkey)
+{
+	char buf[SYSFS_ATTR_SIZE];
+
+	sprintf(buf, "update %ld %ld\n", ckey, nkey);
+	return write_security(dimm, buf);
+}

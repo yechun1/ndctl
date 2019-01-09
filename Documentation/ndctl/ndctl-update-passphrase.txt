@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: GPL-2.0
+
+ndctl-update-passphrase(1)
+==========================
+
+NAME
+----
+ndctl-update-passphrase - update the security passphrase for a NVDIMM
+
+SYNOPSIS
+--------
+[verse]
+'ndctl update-passphrase' <dimm> [<options>]
+
+DESCRIPTION
+-----------
+Provide a command to update the security key for NVDIMM.
+It is expected that the current and the new (if new master key is desired)
+master key has already been loaded into the user key ring. The new encrypted
+key blobs will be created in /etc/nvdimm directory
+with the file name of "nvdimm-<hostname>-<dimm unique id>.blob".
+
+OPTIONS
+-------
+<dimm>::
+include::xable-dimm-options.txt[]
+
+-m::
+--master::
+	New key name for the master key to seal the new nvdimm key, or the
+	existing master key name. i.e trusted:master-key.
+
+-p::
+--key-path=::
+	Path to where key related files resides. This parameter is optional
+	and the default is set to /etc/ndctl/keys.
+
+include::../copyright.txt[]

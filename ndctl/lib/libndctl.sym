@@ -389,4 +389,8 @@ global:
 LIBNDCTL_19 {
 global:
 	ndctl_dimm_get_security;
+	ndctl_dimm_security_supported;
+	ndctl_dimm_enable_key;
+	ndctl_dimm_update_key;
+	ndctl_dimm_update_passphrase;
 } LIBNDCTL_18;
