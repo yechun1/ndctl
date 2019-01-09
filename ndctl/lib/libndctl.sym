@@ -398,4 +398,6 @@ global:
 	ndctl_dimm_freeze_security;
 	ndctl_dimm_secure_erase;
 	ndctl_dimm_secure_erase_key;
+	ndctl_dimm_overwrite;
+	ndctl_dimm_overwrite_key;
 } LIBNDCTL_18;

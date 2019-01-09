@@ -34,4 +34,8 @@ include::xable-dimm-options.txt[]
 	Replaces encryption keys and securely erases the data. This does not
 	change label data. This is the default sanitize method.
 
+-o::
+--ovewrite::
+	Wipe the entire DIMM, including label data. Can take significant time.
+
 include::../copyright.txt[]

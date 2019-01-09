@@ -85,10 +85,9 @@ static char *load_key_blob(struct ndctl_ctx *ctx, const char *path, int *size)
 	char prefix[] = "load ";
 
 	rc = stat(path, &st);
-	if (rc < 0) {
-		err(ctx, "stat: %s\n", strerror(errno));
+	if (rc < 0)
 		return NULL;
-	}
+
 	if ((st.st_mode & S_IFMT) != S_IFREG) {
 		err(ctx, "%s not a regular file\n", path);
 		return NULL;
@@ -404,10 +403,11 @@ static int check_key_run_and_discard(struct ndctl_dimm *dimm,
 	key = dimm_check_key(dimm, false);
 	if (key < 0) {
 		key = dimm_load_key(dimm, false, keypath);
-		if (key < 0) {
+		if (key < 0 && run_op != ndctl_dimm_overwrite) {
 			err(ctx, "Unable to load key\n");
 			return -ENOKEY;
-		}
+		} else
+			key = 0;
 	}
 
 	rc = run_op(dimm, key);
@@ -417,9 +417,11 @@ static int check_key_run_and_discard(struct ndctl_dimm *dimm,
 		return rc;
 	}
 
-	rc = dimm_remove_key(dimm, false, keypath);
-	if (rc < 0)
-		err(ctx, "Unable to cleanup key.\n");
+	if (key) {
+		rc = dimm_remove_key(dimm, false, keypath);
+		if (rc < 0)
+			err(ctx, "Unable to cleanup key.\n");
+	}
 	return 0;
 }
 
@@ -435,4 +437,11 @@ NDCTL_EXPORT int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm,
 {
 	return check_key_run_and_discard(dimm, ndctl_dimm_secure_erase,
 			"crypto erase", keypath);
+}
+
+NDCTL_EXPORT int ndctl_dimm_overwrite_key(struct ndctl_dimm *dimm,
+		const char *keypath)
+{
+	return check_key_run_and_discard(dimm, ndctl_dimm_overwrite,
+			"overwrite", keypath);
 }

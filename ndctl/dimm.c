@@ -48,6 +48,7 @@ static struct parameters {
 	const char *key_path;
 	const char *master_key;
 	bool crypto_erase;
+	bool overwrite;
 	bool force;
 	bool json;
 	bool verbose;
@@ -910,13 +911,19 @@ static int action_sanitize_dimm(struct ndctl_dimm *dimm,
 	 * Setting crypto erase to be default. The other method will be
 	 * overwrite.
 	 */
-	if (!param.crypto_erase) {
+	if (!param.crypto_erase && !param.overwrite) {
 		param.crypto_erase = true;
 		printf("No santize method passed in, default to crypto-erase\n");
 	}
 
 	if (param.crypto_erase) {
 		rc = ndctl_dimm_secure_erase_key(dimm, param.key_path);
+		if (rc < 0)
+			return rc;
+	}
+
+	if (param.overwrite) {
+		rc = ndctl_dimm_overwrite_key(dimm, param.key_path);
 		if (rc < 0)
 			return rc;
 	}
@@ -1023,7 +1030,9 @@ OPT_STRING('m', "master-key", &param.master_key, "<key_type>:<key_name>", \
 
 #define SANITIZE_OPTIONS() \
 OPT_BOOLEAN('c', "crypto-erase", &param.crypto_erase, \
-		"crypto erase a dimm")
+		"crypto erase a dimm"), \
+OPT_BOOLEAN('o', "overwrite", &param.overwrite, \
+		"overwrite a dimm")
 
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
@@ -1361,7 +1370,11 @@ int cmd_sanitize_dimm(int argc, const char **argv, void *ctx)
 			sanitize_options,
 			"ndctl sanitize-dimm <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
-	fprintf(stderr, "sanitized %d nmem%s.\n", count >= 0 ? count : 0,
-			count > 1 ? "s" : "");
+	if (param.overwrite)
+		fprintf(stderr, "overwrite issued for %d nmem%s.\n",
+				count >= 0 ? count : 0, count > 1 ? "s" : "");
+	else
+		fprintf(stderr, "sanitized %d nmem%s.\n",
+				count >= 0 ? count : 0, count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
