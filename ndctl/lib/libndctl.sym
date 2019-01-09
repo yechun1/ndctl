@@ -385,3 +385,8 @@ global:
 	ndctl_namespace_get_next_badblock;
 	ndctl_dimm_get_dirty_shutdown;
 } LIBNDCTL_17;
+
+LIBNDCTL_19 {
+global:
+	ndctl_dimm_get_security;
+} LIBNDCTL_18;

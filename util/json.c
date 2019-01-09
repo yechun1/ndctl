@@ -164,6 +164,7 @@ struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm,
 	unsigned int handle = ndctl_dimm_get_handle(dimm);
 	unsigned short phys_id = ndctl_dimm_get_phys_id(dimm);
 	struct json_object *jobj;
+	enum nd_security_state sstate;
 
 	if (!jdimm)
 		return NULL;
@@ -241,6 +242,36 @@ struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm,
 		if (!jobj)
 			goto err;
 		json_object_object_add(jdimm, "flag_smart_event", jobj);
+	}
+
+	if (ndctl_dimm_get_security(dimm, &sstate) == 0) {
+		switch (sstate) {
+		case ND_SECURITY_UNSUPPORTED:
+			jobj = json_object_new_string("unsupported");
+			break;
+		case ND_SECURITY_DISABLED:
+			jobj = json_object_new_string("disabled");
+			break;
+		case ND_SECURITY_UNLOCKED:
+			jobj = json_object_new_string("unlocked");
+			break;
+		case ND_SECURITY_LOCKED:
+			jobj = json_object_new_string("locked");
+			break;
+		case ND_SECURITY_FROZEN:
+			jobj = json_object_new_string("frozen");
+			break;
+		case ND_SECURITY_OVERWRITE:
+			jobj = json_object_new_string("overwrite");
+			break;
+		case ND_SECURITY_INVALID:
+		default:
+			jobj = json_object_new_string("invalid");
+			break;
+		}
+		if (!jobj)
+			goto err;
+		json_object_object_add(jdimm, "security", jobj);
 	}
 
 	return jdimm;

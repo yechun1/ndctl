@@ -681,6 +681,19 @@ enum ND_FW_STATUS ndctl_cmd_fw_xlat_firmware_status(struct ndctl_cmd *cmd);
 struct ndctl_cmd *ndctl_dimm_cmd_new_ack_shutdown_count(struct ndctl_dimm *dimm);
 int ndctl_dimm_fw_update_supported(struct ndctl_dimm *dimm);
 
+enum nd_security_state {
+	ND_SECURITY_INVALID = -1,
+	ND_SECURITY_UNSUPPORTED = 0,
+	ND_SECURITY_DISABLED,
+	ND_SECURITY_UNLOCKED,
+	ND_SECURITY_LOCKED,
+	ND_SECURITY_FROZEN,
+	ND_SECURITY_OVERWRITE,
+};
+
+int ndctl_dimm_get_security(struct ndctl_dimm *dimm,
+		enum nd_security_state *sstate);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
