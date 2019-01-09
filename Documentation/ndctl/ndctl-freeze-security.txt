@@ -17,4 +17,6 @@ DESCRIPTION
 Provide a generic interface to freeze the security for NVDIMM. Once security
 is frozen, no other security operations can succeed until reboot happens.
 
+include::intel-nvdimm-security.txt[]
+
 include::../copyright.txt[]

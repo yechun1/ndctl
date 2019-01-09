@@ -44,4 +44,6 @@ include::xable-dimm-options.txt[]
 	instead of the user passphrase. This only is applicable to the
 	crypto-erase option.
 
+include::intel-nvdimm-security.txt[]
+
 include::../copyright.txt[]

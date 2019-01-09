@@ -29,4 +29,6 @@ include::xable-dimm-options.txt[]
 	Path to where key related files resides. This parameter is optional
 	and the default is set to /etc/ndctl/keys.
 
+include::intel-nvdimm-security.txt[]
+
 include::../copyright.txt[]

@@ -40,4 +40,6 @@ include::xable-dimm-options.txt[]
 	Parameter to indicate that we are managing the master passphrase
 	instead of the user passphrase.
 
+include::intel-nvdimm-security.txt[]
+
 include::../copyright.txt[]
