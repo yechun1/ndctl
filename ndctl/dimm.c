@@ -864,6 +864,18 @@ static int action_key_update(struct ndctl_dimm *dimm,
 			param.key_path);
 }
 
+static int action_passphrase_disable(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	if (!ndctl_dimm_security_supported(dimm)) {
+		error("%s: security operation not supported\n",
+				ndctl_dimm_get_devname(dimm));
+		return -EOPNOTSUPP;
+	}
+
+	return ndctl_dimm_disable_key(dimm, param.key_path);
+}
+
 static int __action_init(struct ndctl_dimm *dimm,
 		enum ndctl_namespace_version version, int chk_only)
 {
@@ -953,11 +965,13 @@ OPT_BOOLEAN('f', "force", &param.force, \
 OPT_STRING('V', "label-version", &param.labelversion, "version-number", \
 	"namespace label specification version (default: 1.1)")
 
-#define KEY_OPTIONS() \
-OPT_STRING('m', "master-key", &param.master_key, "<key_type>:<key_name>", \
-		"master key for security"), \
+#define KEY_BASE_OPTIONS() \
 OPT_FILENAME('p', "key-path", &param.key_path, "key-path", \
 		"override the default key path")
+
+#define KEY_OPTIONS() \
+OPT_STRING('m', "master-key", &param.master_key, "<key_type>:<key_name>", \
+		"master key for security")
 
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
@@ -988,8 +1002,15 @@ static const struct option init_options[] = {
 	OPT_END(),
 };
 
+static const struct option key_base_options[] = {
+	BASE_OPTIONS(),
+	KEY_BASE_OPTIONS(),
+	OPT_END(),
+};
+
 static const struct option key_options[] = {
 	BASE_OPTIONS(),
+	KEY_BASE_OPTIONS(),
 	KEY_OPTIONS(),
 	OPT_END(),
 };
@@ -1250,6 +1271,17 @@ int cmd_passphrase_setup(int argc, const char **argv, struct ndctl_ctx *ctx)
 			"ndctl enable-passphrase <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
 	fprintf(stderr, "passphrase enabled for %d nmem%s.\n", count >= 0 ? count : 0,
+			count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_disable_passphrase(int argc, const char **argv, void *ctx)
+{
+	int count = dimm_action(argc, argv, ctx, action_passphrase_disable,
+			key_base_options,
+			"ndctl disable-passphrase <nmem0> [<nmem1>..<nmemN>] [<options>]");
+
+	fprintf(stderr, "passphrase disabled %d nmem%s.\n", count >= 0 ? count : 0,
 			count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }

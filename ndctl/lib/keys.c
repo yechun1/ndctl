@@ -392,3 +392,32 @@ NDCTL_EXPORT int ndctl_dimm_update_key(struct ndctl_dimm *dimm,
 
 	return 0;
 }
+
+NDCTL_EXPORT int ndctl_dimm_disable_key(struct ndctl_dimm *dimm,
+		const char *keypath)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	key_serial_t key;
+	int rc;
+
+	key = dimm_check_key(dimm, false);
+	if (key < 0) {
+		key = dimm_load_key(dimm, false, keypath);
+		if (key < 0) {
+			err(ctx, "Unable to load key\n");
+			return -ENOKEY;
+		}
+	}
+
+	rc = ndctl_dimm_disable_passphrase(dimm, key);
+	if (rc < 0) {
+		err(ctx, "Failed to disable security for %s\n",
+				ndctl_dimm_get_devname(dimm));
+		return rc;
+	}
+
+	rc = dimm_remove_key(dimm, false, keypath);
+	if (rc < 0)
+		err(ctx, "Unable to cleanup key.\n");
+	return 0;
+}

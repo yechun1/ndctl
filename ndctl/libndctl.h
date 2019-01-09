@@ -701,6 +701,7 @@ int ndctl_dimm_get_security(struct ndctl_dimm *dimm,
 bool ndctl_dimm_security_supported(struct ndctl_dimm *dimm);
 int ndctl_dimm_update_passphrase(struct ndctl_dimm *dimm,
 		long ckey, long nkey);
+int ndctl_dimm_disable_passphrase(struct ndctl_dimm *dimm, long key);
 
 enum ndctl_key_type {
 	ND_USER_KEY,
@@ -712,6 +713,7 @@ int ndctl_dimm_enable_key(struct ndctl_dimm *dimm, const char *master,
 		const char *keypath);
 int ndctl_dimm_update_key(struct ndctl_dimm *dimm, const char *master,
 		const char *keypath);
+int ndctl_dimm_disable_key(struct ndctl_dimm *dimm, const char *keypath);
 #else
 static inline int ndctl_dimm_enable_key(struct ndctl_dimm *dimm,
 		const char *master, const char *keypath)
@@ -721,6 +723,12 @@ static inline int ndctl_dimm_enable_key(struct ndctl_dimm *dimm,
 
 static inline int ndctl_dimm_update_key(struct ndctl_dimm *dimm,
 		const char *master, const char *keypath)
+{
+	return -EOPNOTSUPP;
+}
+
+static inline int ndctl_dimm_disable_key(struct ndctl_dimm *dimm,
+		const char *keypath)
 {
 	return -EOPNOTSUPP;
 }

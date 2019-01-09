@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: GPL-2.0
+
+ndctl-disable-passphrase(1)
+===========================
+
+NAME
+----
+ndctl-disable-passphrase - disabling passphrase for an NVDIMM
+
+SYNOPSIS
+--------
+[verse]
+'ndctl disable-passphrase' <dimm> [<options>]
+
+DESCRIPTION
+-----------
+Provide a generic interface for disabling passphrase for NVDIMM.
+Ndctl will search the user key ring for the associated DIMM. If no key is
+found, it will attempt to load the key blob from the expected location. Ndctl
+will remove the key and the key blob once passphrase is disabled.
+
+OPTIONS
+-------
+<dimm>::
+include::xable-dimm-options.txt[]
+
+-p::
+--key-path=::
+	Path to where key related files resides. This parameter is optional
+	and the default is set to /etc/ndctl/keys.
+
+include::../copyright.txt[]
